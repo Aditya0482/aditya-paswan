@@ -170,11 +170,11 @@ export function Contact() {
                     from_email: email,
                     user_email: email,
                     sender_email: email,
-                    to_email: 'adityapaswan280@gmail.com',
-                    admin_email: 'adityapaswan280@gmail.com',
-                    reply_to: email,
+                    to_email: email,
+                    recipient_email: email,
+                    reply_to: 'adityapaswan280@gmail.com',
                     message,
-                    to_name: 'Aditya Paswan',
+                    to_name: name,
                     my_name: 'Aditya Paswan'
                   };
 
