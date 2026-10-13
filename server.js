@@ -258,6 +258,17 @@ app.post('/api/visitors/hit', rateLimiter('visitor_hit', 10, 60 * 1000), async (
   }
 });
 
+// Public runtime configuration for client-side services (EmailJS)
+app.get('/api/config', (req, res) => {
+  res.json({
+    emailjs: {
+      serviceId: process.env.VITE_EMAILJS_SERVICE_ID || process.env.EMAILJS_SERVICE_ID || '',
+      templateId: process.env.VITE_EMAILJS_TEMPLATE_ID || process.env.EMAILJS_TEMPLATE_ID || '',
+      publicKey: process.env.VITE_EMAILJS_PUBLIC_KEY || process.env.EMAILJS_PUBLIC_KEY || ''
+    }
+  });
+});
+
 // ----------------- Static Frontend -----------------
 
 // Serve static assets from Vite build output

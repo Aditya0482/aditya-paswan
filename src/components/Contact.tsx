@@ -38,6 +38,40 @@ const findResumeImages = async (): Promise<string[]> => {
   return page2Src ? [page1Src, page2Src] : [page1Src];
 };
 
+const fetchEmailJsConfig = async () => {
+  const envServiceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+  const envTemplateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+  const envPublicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+  if (envServiceId && envTemplateId && envPublicKey) {
+    return {
+      serviceId: envServiceId,
+      templateId: envTemplateId,
+      publicKey: envPublicKey
+    };
+  }
+
+  try {
+    const res = await fetch('/api/config');
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        serviceId: envServiceId || data.emailjs?.serviceId || '',
+        templateId: envTemplateId || data.emailjs?.templateId || '',
+        publicKey: envPublicKey || data.emailjs?.publicKey || ''
+      };
+    }
+  } catch (err) {
+    console.warn('Could not fetch runtime config from /api/config:', err);
+  }
+
+  return {
+    serviceId: envServiceId || '',
+    templateId: envTemplateId || '',
+    publicKey: envPublicKey || ''
+  };
+};
+
 export function Contact() {
   const [showResumeModal, setShowResumeModal] = useState(false);
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
@@ -141,15 +175,17 @@ export function Contact() {
                     my_name: 'Aditya Paswan'
                   };
 
+                  // Resolve EmailJS keys (build-time Vite env or runtime /api/config from Railway)
+                  const { serviceId, templateId, publicKey } = await fetchEmailJsConfig();
+
+                  const emailTask = (serviceId && templateId && publicKey)
+                    ? emailjs.send(serviceId, templateId, templateParams, publicKey)
+                    : Promise.reject(new Error('EmailJS keys not configured. Set VITE_EMAILJS_* in Railway.'));
+
                   // Send to backend (PostgreSQL + Telegram) and EmailJS in parallel
                   const [dbResult, emailResult] = await Promise.allSettled([
                     saveContactMessage(name, email, message),
-                    emailjs.send(
-                      import.meta.env.VITE_EMAILJS_SERVICE_ID,
-                      import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
-                      templateParams,
-                      import.meta.env.VITE_EMAILJS_PUBLIC_KEY
-                    )
+                    emailTask
                   ]);
 
                   if (emailResult.status === 'fulfilled') {
